@@ -1,0 +1,317 @@
+---
+title: "Assessing the Volatility of China's Solar Energy Generation: An Analysis of Ember 2026 Global Electricity Review"
+author: "Tom Kepert"
+title-block-banner: true
+format: gfm
+  html:
+    theme: cosmo
+    embed-resources: true
+    toc: true
+    code-fold: true
+---
+```{r setup, include = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+```
+
+
+# Executive Summary
+
+::: {style="border: 1px solid #ccc; padding: 20px; background-color: #fdfdfd; border-radius: 5px; margin: 20px 0;"}
+
+* Statistical analysis indicates that **solar energy growth has significantly higher volatility** than traditional coal baseload. 
+
+* **This necessitates accelerating investment in utility-scale, rapid response solar battery storage**
+
+* Financing this **grid firming infrastructure is essential to mitigate instability** and safely advance China’s transition towards decarbonisation. 
+
+:::
+
+# Evidence and Analysis
+
+#####
+
+::: {.panel-tabset}
+
+### Figure 1: Energy Generation by Source
+
+```{r}
+library(tidyverse)
+library(rafalib)
+library(plotly)
+library(viridis)
+library(car)
+library(knitr)
+
+China_Data = read.csv("China Electricity Data(Sheet1).csv") %>% rename(growth_percentage = `YoY...change`) 
+
+generation_type_1 = China_Data %>% filter(Category == "Electricity generation", Subcategory == "Fuel", Unit == "TWh", Variable %in% c("Solar", "Wind", "Hydro", "Coal", "Gas"), Unit == "TWh", Year >= 2015)
+
+energy_colours_2 = c("Solar" = "#fdb813", "Wind" = "#2ca25f", "Hydro" = "#3182bd", "Coal" = "#ff4d55", "Gas" = "#8856a7")
+
+
+ggplot(generation_type_1, aes(x = Year, y = Value, color = Variable)) +
+geom_line(linewidth = 1) + 
+geom_point(size = 1.5, alpha = 0.65) +
+scale_y_continuous(labels = scales::comma) +
+scale_x_continuous(breaks = c(2015, 2020, 2025)) +
+scale_color_manual(values = energy_colours_2) +
+theme_minimal() +
+labs(title = "China's Electricity Generation by Source ", subtitle = "Annual Energy Generation in TWh (2015 - 2025)", x = "Year", y = "Generation (TWh)", color = "Energy Source")
+
+```
+
+### Figure 2: Growth Rate of Energy Generation Types
+
+```{r}
+
+growth_rate_2 = generation_type_1
+
+ggplot(growth_rate_2, aes(x = Year, y =`growth_percentage`, fill = Variable)) +
+geom_col(position = "dodge") + 
+theme_minimal() +
+scale_fill_manual(values = energy_colours_2) +
+labs(title = "Year on Year Percentage Growth by Fuel Type in China", subtitle = "Annual Energy Generation Growth (%) (2015 - 2025)", y = "Growth Rate (%)", x = "Year", fill = "Fuel Source")
+
+```
+
+:::
+
+### Key Insights 1
+
+::: {style="border: 1px solid #ccc; padding: 20px; background-color: #fdfdfd; border-radius: 5px; margin: 20px 0;"}
+
+* China’s **decarbonisation relies heavily on transitioning away from coal**, which is the primary source of CO2 emissions, towards renewables.
+
+* While **solar and wind capacity is expanding rapidly**, coal still makes up a vast majority of energy production. 
+
+* Energy production from coal fell in 2025 for the first time in the last decade, by 70.6 TWh, while solar and wind increased by 335.9 and 138.4 TWh respectively. Combined, solar and wind growth nearly outpaced the total electricity demand growth of 502.7 TWh in 2025.
+
+* The continued **high annual growth of solar energy generation over the last decade** has resulted from **intensive investment in renewable infrastructure**, which has aided in rapid unit cost reductions, as battery and solar photovoltaic costs have fallen by more than 90% since 2015. 
+
+:::
+
+####
+
+::: {.panel-tabset}
+
+### Figure 3: Distribution of Generation Growth Rates
+
+```{r}
+
+growth_rate_3 = growth_rate_2
+
+ggplot(growth_rate_3, aes(x = Variable, y = growth_percentage, fill = Variable)) +
+geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
+geom_violin(alpha = 0.6, scale = "width") +
+geom_boxplot(width = 0.1, color = "black", outlier.shape = NA, alpha = 0.8) +
+geom_jitter(color = "black", width = 0.1, alpha = 0.6, size = 1.2) +
+scale_fill_manual(values = energy_colours_2) +
+theme_minimal() +
+labs(title = "Distribution of Growth Rate ", subtitle = "Annual Energy Growth (%) (2015 - 2025)", y = "Year on Year Growth Rate (%) ", x = "Energy Source") + theme(legend.position = "none", plot.title = element_text(face = "bold", size = 14),   panel.grid.minor = element_blank())
+
+```
+
+### Figure 4: Energy Generation Acceleration
+
+```{r}
+
+acceleration_data_4 = China_Data %>% filter(Category == "Electricity generation", Subcategory == "Fuel", Unit == "TWh", Variable %in% c("Solar", "Wind", "Hydro", "Coal", "Gas"), Year >= 2015) %>% group_by(Variable) %>%  mutate(acceleration = growth_percentage - lag(growth_percentage)) %>% drop_na(acceleration)
+
+ggplot(acceleration_data_4, aes(x = Year, y = acceleration, color = Variable, fill = Variable)) +
+geom_hline(yintercept = 0, linetype = "dashed", color = "grey70") +
+geom_area(alpha = 0.2) +
+geom_line(linewidth = 1) +
+geom_point(size = 1.5) +
+facet_wrap(~Variable, scales = "fixed", ncol = 3) + 
+scale_x_continuous(breaks = c(2016, 2020, 2025)) +
+scale_color_manual(values = energy_colours_2) +
+scale_fill_manual(values = energy_colours_2) +
+theme_minimal() +
+labs(title = "Energy Generation Acceleration", subtitle = "Annual Change in Growth Rate (%) (2015 - 2025)", y = "Change in Growth Rate (%)", colour = "Energy Source") +
+theme(legend.position = "none", strip.text = element_text(face = "bold", size = 10), panel.spacing = unit(1.5, "lines"))
+
+```
+
+:::
+
+### Key Insights 2
+
+::: {style="border: 1px solid #ccc; padding: 20px; background-color: #fdfdfd; border-radius: 5px; margin: 20px 0;"}
+
+* Figures 4 and 5 illustrate the **large variance in solar growth rates and acceleration** compared to other generation types
+
+* **Coal baseload** has a **very small variance** in growth (high stability), and consistent near zero acceleration.
+
+* The internal **volatility of solar growth** suggests that the **decarbonisation transition is hindered by grid instability**. 
+
+:::
+
+## Results of Hypothesis Test
+
+::: {style="border: 1px solid #ccc; padding: 20px; background-color: #fdfdfd; border-radius: 5px; margin: 20px 0;"}
+
+* An $F$-test and a Levene's test was conducted, comparing the annual growth rates of solar and coal. Assuming independent observations and approximately normal distributions, the **null hypothesis  ($H_0$)** of equivalent variances between solar and coal was **definitively rejected** ($p = 6.258 \times 10^{-6}$, $p = 0.003$ respectively). 
+
+* This confirms that solar growth has a **definitively high volatility**, and as such **places highly variable stress on grid infrastructure**. 
+
+:::
+
+
+::: {.panel-tabset}
+
+### Figure 5: Summative Volatility of Generation Growth
+
+```{r}
+scatter_5 = China_Data %>% filter(Category == "Electricity generation", Subcategory == "Fuel", Variable %in% c("Solar", "Wind", "Hydro", "Coal", "Gas"), Year >= 2015) %>% group_by(Variable) %>% summarise(avg_growth = mean(growth_percentage, na.rm = TRUE),
+volatility = sd(growth_percentage, na.rm = TRUE))
+
+
+ggplot(scatter_5, aes(x = avg_growth, y = volatility, color = Variable)) +
+geom_point(size = 5) +
+geom_text(aes(label = Variable), vjust = -1.5, fontface = "bold") +
+scale_color_manual(values = energy_colours_2) +
+expand_limits(x = max(scatter_5$avg_growth) * 1.03) +
+expand_limits(y = max(scatter_5$volatility) * 1.05) + 
+theme_minimal() + 
+labs(title = "Growth vs Volatility ", subtitle = "Comparing Average Annual Growth Rate and Standard Deviation (2015 - 2025)", x = "Average Annual Growth Rate (%)", y = "Volatility (Std. Dev. of Growth %)") +
+theme(legend.position = "none") +
+annotate("text", x = 37, y = 18, label = "High Growth / High Risk", alpha = 0.6, fontface = "italic") + annotate("text", x = 5, y = 2, label = "Stable Baseload", alpha = 0.6, fontface = "italic")
+```
+
+###
+
+:::
+
+
+## Key Takeaway
+
+::: {style="border: 1px solid #ccc; padding: 20px; background-color: #fdfdfd; border-radius: 5px; margin: 20px 0;"}
+
+* Solar energy production has a uniquely **high growth**, yet a **high risk**. 
+
+* **Therefore, higher volatility in solar energy generation necessitates grid firming investments**. 
+
+:::
+
+## Limitations
+
+::: {style="border: 1px solid #ccc; padding: 20px; background-color: #fdfdfd; border-radius: 5px; margin: 20px 0;"}
+
+1. The hypothesis test relied on the **small sample size** (**n = 11**, 2015 to 2025), limiting the validity of normality assumption, potentially skewing variance estimates. 
+
+
+2. The 2026 Global Electricity Review dataset’s country **aggregate and yearly format limits analysis of energy production, demand, and growth over shorter periods and smaller regions** (inability to indicate high frequency volatility or localised grid stress at the provincial level). 
+
+
+3. Confounders such as the **COVID-19 pandemic** may have influenced the growth rate of solar photovoltaics by disrupting supply chains and installation capacity, limiting conclusions drawn about individual solar growth volatility. 
+
+:::
+
+# Hypthoesis Testing
+
+## Hypothesis
+
+::: {style="border: 1px solid #ccc; padding: 20px; background-color: #fdfdfd; border-radius: 5px; margin: 20px 0;"}
+
+**Null Hypothesis ($H_0$):**  $\sigma^2_{\text{solar}} = \sigma^2_{\text{coal}}$ 
+
+The variance of annual electricity generation growth rates for solar energy is equal to the variance of annual growth rates for coal baseload. (i.e. both energy sources exhibit the same level of growth stability).
+    
+**Alternative Hypothesis ($H_1$):**  $\sigma^2_{\text{solar}} > \sigma^2_{\text{coal}}$ 
+
+
+The variance of annual solar energy growth rates is greater than that of coal baseload, validating the necessity of grid firming solar investments. 
+:::
+
+
+## Assumptions
+
+
+::: {style="border: 1px solid #ccc; padding: 20px; background-color: #fdfdfd; border-radius: 5px; margin: 20px 0;"}
+
+1. Observations consist of year-on-year annual growth percentages from 2015 to 2025. Annual changes in electricity generation were assumed to act as mutually independent data points over time.
+
+3. Traditional parametric variance testing assumes data is normally distributed. 
+
+```{r}
+
+qq_data = generation_type_1 %>% filter(Variable %in% c("Solar", "Coal"))
+
+ggplot(qq_data, aes(sample = growth_percentage, color = Variable)) +
+stat_qq(size = 1.5) +
+stat_qq_line(linewidth = 1) +
+facet_wrap(~Variable, scales = "free") +
+scale_color_manual(values = energy_colours_2) +
+theme_minimal() +
+labs(title = "Normal Q-Q Plots for Annual Growth Rates", subtitle = "Checking Normality Assumptions for Solar and Coal (2015 - 2025)", x = "Theoretical Quantiles", y = "Sample Quantiles") +
+theme(legend.position = "none", strip.text = element_text(face = "bold", size = 11), plot.title = element_text(face = "bold"))
+
+```
+
+Evaluation of the normal Q-Q plots indicates that the internal data points cluster closely along the trendline, except for outer tail points, which diverge slightly from the theoretical diagonals. This supports the assumption that the datasets are approximately normally distributed. 
+
+
+:::
+
+
+## Test Statistics and P-Values
+
+### Shapiro-Wilks Test 
+
+::: {style="border: 1px solid #ccc; padding: 5px 20px 20px 20px; background-color: #fdfdfd; border-radius: 5px; margin: 20px 0;"}
+```{r}
+growth_solar = qq_data %>% filter(Variable == "Solar") %>% pull(growth_percentage)
+growth_coal = qq_data %>% filter(Variable == "Coal") %>% pull(growth_percentage)
+
+shapiro_solar = shapiro.test(growth_solar)
+shapiro_coal = shapiro.test(growth_coal)
+
+levene_res = leveneTest(growth_percentage ~ Variable, data = qq_data, center = median)
+levene_f = round(levene_res$`F value`[1], 3)
+levene_p = levene_res$`Pr(>F)`[1]
+
+f_res = var.test(growth_solar, growth_coal, alternative = "greater")
+f_value = round(f_res$statistic, 3)
+f_p = f_res$p.value
+
+format_p = function(p) {if (p < 0.001) {return(formatC(p, format = "e", digits = 3))} else {return(paste0(round(p, 3)))}}
+
+summary_table = data.frame(`Statistical Test` = c("**Shapiro-Wilk**", "**Shapiro-Wilk**"),`Variable` = c("Solar Growth", "Coal Growth"),`Metric` = c("$W$-statistic", "$W$-statistic"),`Value` = c(round(shapiro_solar$statistic, 3), round(shapiro_coal$statistic, 3)),`P-Value` = c(format_p(shapiro_solar$p.value), format_p(shapiro_coal$p.value)),`Result / Significance` = c("Fail to reject $H_0$ (Normally distributed data)", "Fail to reject $H_0$ (Normally distributed data)"), check.names = FALSE)
+
+kable(summary_table, align = c('l', 'l', 'l', 'c', 'c', 'l'))
+```
+:::
+
+### Interpretation and Rationale for Alternative Testing 
+
+::: {style="border: 1px solid #ccc; padding: 20px; background-color: #fdfdfd; border-radius: 5px; margin: 20px 0;"}
+While the Shapiro-Wilk tests failed to reject the null hypothesis of normality ($p > 0.05$), the low sample size significantly limits the ability to detect true non normality. To mitigate this limitation, a non parametric Levene's Test (centred at the median) was run alongside the main F-test (since it doesn't require or assume normality). 
+:::
+
+### F and Levene's Tests
+
+::: {style="border: 1px solid #ccc; padding: 20px; background-color: #fdfdfd; border-radius: 5px; margin: 20px 0;"}
+
+```{r}
+summary_table_2 = data.frame(`Statistical Test` = c("**F-Test**", "**Levene’s Test**"),`Variable` = c("Solar vs. Coal", "Solar vs. Coal"),`Metric` = c("$F$-statistic", "$F$-statistic"),`Value` = c(as.numeric(f_value), levene_f),`P-Value` = c(format_p(f_p), format_p(levene_p)),`Result / Significance` = c("**Reject $H_0$ (Solar Variance > Coal)**", "**Reject $H_0$ (Unequal Variances)**"), check.names = FALSE)
+
+kable(summary_table_2)
+```
+
+:::
+
+
+## Conclusion
+
+::: {style="border: 1px solid #ccc; padding: 20px; background-color: #fdfdfd; border-radius: 5px; margin: 20px 0;"}
+
+The parametric $F$-test yielded a test statistic of $F = 27.209$ with an associated p-value of $p = 6.258 \times 10^{-6}$, substantiating the definitive rejection of the null hypothesis ($H_0$). Additionally, parallel validation via the non parametric Levene’s test strongly supported this outcome ($p = 0.003$), as both p values fell far below the significance threshold ($p = 0.05$). Therefore, this proves that the variance of China's annual solar growth is significantly greater than that of coal baseload infrastructure.
+
+These tests confirm that while solar energy capacity is expanding rapidly, its high internal volatility results in severe variable stress on the electrical transmission network. This validates the necessity of transitioning investment toward utility scale grid firming assets, such as rapid response battery storage systems, to insulate network load and maintain stability throughout the ongoing decarbonisation process.
+
+:::
+
+
+
